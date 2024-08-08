@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1723075635488,
+      "tag": "0000_futuristic_tana_nile",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1723075716444,
+      "tag": "0001_volatile_joseph",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1723075786190,
+      "tag": "0002_equal_white_queen",
+      "breakpoints": true
+    }
+  ]
+}
