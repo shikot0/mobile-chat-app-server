@@ -22,6 +22,20 @@
       "when": 1723075786190,
       "tag": "0002_equal_white_queen",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1723416902908,
+      "tag": "0003_keen_carlie_cooper",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1723416942277,
+      "tag": "0004_fresh_bloodaxe",
+      "breakpoints": true
     }
   ]
 }

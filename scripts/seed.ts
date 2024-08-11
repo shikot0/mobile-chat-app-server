@@ -31,6 +31,7 @@ const newUsers: User[] = [
 // let newConversationParticipants: ConversationParticipants[] = [];
 async function addUsers(newUsers: User[]) {
     let newConversationParticipants: ConversationParticipants[] = [];
+    await db.delete(conversationParticipants)
     await db.delete(users);
 
     for(let i = 0; i < newUsers.length; i++) {
@@ -65,9 +66,13 @@ async function addConversation(newConversationParticipants: ConversationParticip
     const idArray: {id: string}[] = await db.insert(conversations).values({}).returning();
     const conversationId = idArray[0].id;
 
+    // console.log({newConversationParticipants})
+    // const participants = await db.select().from(conversationParticipants);
+    // console.log({idArray})
+
     for(let i = 0; i < newConversationParticipants.length; i++) {
         const {participantId} = newConversationParticipants[i];
-        console.log({conversationId, participantId})
+        // console.log({conversationId, participantId})
         await db.insert(conversationParticipants).values({conversationId, participantId})
     }
 
@@ -94,12 +99,15 @@ addUsers(newUsers)
 .then((newConversationParticipants) => {
     addConversation(newConversationParticipants)
     .catch(error => {
-        console.error(`Error: ${error}`)
+        console.error(`Conversation Error: ${error}`)
     })
 })
 .catch(error => {
-    console.error(`Error: ${error}`)
+    console.error(`Users Error: ${error}`)
 })
+// .finally(() => {
+//     console.log('Done')
+// })
 // .finally(() => {
 //     console.log('Finished Script')
 // })
