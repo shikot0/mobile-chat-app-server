@@ -36,6 +36,13 @@
       "when": 1723416942277,
       "tag": "0004_fresh_bloodaxe",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1723504916966,
+      "tag": "0005_common_the_twelve",
+      "breakpoints": true
     }
   ]
 }
