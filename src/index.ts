@@ -5,18 +5,19 @@ import authRoutes from "./routes/authRoutes";
 import {jwt} from "@elysiajs/jwt";
 
 
-const AUTHORIZATION_KEY = process.env.AUTHORIZATION_KEY || '';
+const AUTHORIZATION_SECRET = process.env.AUTHORIZATION_SECRET || '';
+
 
 const app = new Elysia({
   // cookie: {
-  //   secrets: AUTHORIZATION_KEY,
+  //   secrets: AUTHORIZATION_SECRET,
   //   sign: ['auth']
   // }
 })
 .use(
   jwt({
     name: 'jwt',
-    secret: AUTHORIZATION_KEY
+    secret: AUTHORIZATION_SECRET
   })
 )
 .use(authRoutes)
