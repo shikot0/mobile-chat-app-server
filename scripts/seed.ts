@@ -1,5 +1,6 @@
 import { db } from "../drizzle/db"
-import { conversationParticipants, conversations, users } from "../drizzle/schema"
+import { conversationParticipants, conversations, users } from "../drizzle/schema";
+import {password as hashingFunction} from 'bun';
 
 type User = {
     id: string,
@@ -13,17 +14,17 @@ type User = {
 const newUsers: User[] = [
     {
         id: '86d18a51-3436-422a-bcd5-799859c8a16d',
-        username: 'shikoto',
+        username: 'sheikh',
         email: '1sh1m1da1@gmail.com',
         phone: '+2202195612',
-        password: 'testpassword'
+        password: 'AlphaSheikh1'
     },
     {
         id: 'df51b6f7-87ae-4d1f-854e-c4e1c93cf020',
         username: 'user_number_two',
         email: 'testEmail@gmail.com',
-        phone: '+2207024506',
-        password: 'testpassword2'
+        phone: '+2202195612',
+        password: 'AlphaSheikh1'
     }
 ]
 
@@ -35,8 +36,9 @@ async function addUsers(newUsers: User[]) {
     await db.delete(users);
 
     for(let i = 0; i < newUsers.length; i++) {
-        const {username, email, phone, password} = newUsers[i];
-        const userArray: {id: string}[] = await db.insert(users).values({username, email, phone, password}).returning();
+        const {id, username, email, phone, password} = newUsers[i];
+        const encryptedPassword = await hashingFunction.hash(password)
+        const userArray: {id: string}[] = await db.insert(users).values({id, username, email, phone, password: encryptedPassword}).returning();
         const newUser = userArray[0];
         newConversationParticipants.push({participantId: newUser.id})
     }
@@ -63,7 +65,7 @@ async function addConversation(newConversationParticipants: ConversationParticip
     await db.delete(conversationParticipants);
     await db.delete(conversations);
 
-    const idArray: {id: string}[] = await db.insert(conversations).values({}).returning();
+    const idArray: {id: string}[] = await db.insert(conversations).values({createdBy: newUsers[0].id}).returning();
     const conversationId = idArray[0].id;
 
     // console.log({newConversationParticipants})

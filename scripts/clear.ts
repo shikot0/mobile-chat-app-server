@@ -3,12 +3,12 @@ import { conversationParticipants, conversations, mediaMessages, messages, textM
 
 async function clearDB() {
     console.log('Started')
-    await db.delete(conversationParticipants);
-    await db.delete(users);
+    await db.delete(messages);
     await db.delete(textMessages);
     await db.delete(mediaMessages);
-    await db.delete(messages);
+    await db.delete(conversationParticipants);
     await db.delete(conversations);
+    await db.delete(users);
 }
 
 clearDB()
