@@ -104,13 +104,15 @@ const authRoutes = new Elysia({prefix: '/auth'})
 .patch('log-in', async ({body, jwt}) => {
     try {
         let {email, password} = body;
+
+        // console.log({body})
         email = email.trim();
         password = password.trim();
         const user = (await db.select().from(users).where(eq(users.email, email))).at(0);
 
-        console.log({user})
+        // console.log({user})
         const allUsers = await db.select({username: users.username, email: users.email}).from(users);
-        console.log({allUsers})
+        // console.log({allUsers})
         if(!user) {
             return {succeeded: false, message: 'User does not exist'}
         }

@@ -14,12 +14,12 @@ const app = new Elysia({
   //   sign: ['auth']
   // }
 })
-.use(
-  jwt({
-    name: 'jwt',
-    secret: AUTHORIZATION_SECRET
-  })
-)
+// .use(
+//   jwt({
+//     name: 'jwt',
+//     secret: AUTHORIZATION_SECRET
+//   })
+// )
 .use(authRoutes)
 .use(userRoutes)
 .use(messageRoutes)

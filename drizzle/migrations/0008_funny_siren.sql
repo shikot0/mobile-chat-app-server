@@ -1,0 +1,1 @@
+ALTER TABLE "conversations" ADD COLUMN "conversation_type" text DEFAULT 'one-to-one' NOT NULL;

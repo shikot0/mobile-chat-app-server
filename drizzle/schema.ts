@@ -62,6 +62,7 @@ export const mediaMessages = pgTable('media_messages', {
 
 export const conversations = pgTable('conversations', { 
     id: uuid('id').defaultRandom().primaryKey(),
+    conversationType: text('conversation_type', {enum: ['one-to-one', 'group']}).default('one-to-one').notNull(),
     createdBy: uuid('created_by').references(() => users.id).notNull(),
     createdAt: timestamp('created_at', {withTimezone: true}).defaultNow(),
     // createdBy: uuid('id').references(() => users.id).notNull()
