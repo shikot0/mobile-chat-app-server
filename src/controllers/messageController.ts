@@ -11,7 +11,16 @@ export async function createConversation(body: any) {
 }
 
 type Conversation = typeof conversations.$inferSelect;
-type ConversationParticipant = typeof conversationParticipants.$inferSelect;
+// type ConversationParticipant = typeof conversationParticipants.$inferSelect;
+// type ConversationParticipant = typeof conversationParticipants.$inferSelect & {
+//     id: string,
+//     username: string,
+//     email: string,
+//     phone: string,
+//     profilePicture: string | null,
+//     createdAt: string
+// }
+type ConversationParticipant = typeof conversationParticipants.$inferSelect & Omit<Users, 'password'>
 type Users = typeof users.$inferSelect;
 
 export async function getConversations(token: string | undefined, jwt:{
@@ -47,41 +56,95 @@ export async function getConversations(token: string | undefined, jwt:{
             return error('Expectation Failed')
         }
 
+        // const returnedConversations = await db.select()
+        // .from(conversationParticipants)
+        // .where(eq(conversationParticipants.participantId, id))
+        // .innerJoin(
+        //     conversations, 
+        //     eq(conversationParticipants.conversationId, conversations.id)
+        // )
+        // .innerJoin(
+        //     users, 
+        //     eq(conversationParticipants.participantId, users.id)
+        // )
+
+        // const returnedConversations = await db.select()
+        // .from(conversations)
+        // .innerJoin(
+        //     conversationParticipants, 
+        //     eq(conversations.id, conversationParticipants.conversationId)
+        // )
+        // .innerJoin(
+        //     users, 
+        //     eq(conversationParticipants.participantId, users.id)
+        // )
+ 
+        // const returnedConversations = await db.select()
+        // .from(conversationParticipants)
+        // // .where(eq(conversationParticipants.participantId, id))
+        // .innerJoin(
+        //     users, 
+        //     eq(conversationParticipants.participantId, users.id)
+        // )
+        // .innerJoin(
+        //     conversations, 
+        //     eq(conversationParticipants.conversationId, conversations.id)
+        // )
+
+
         const returnedConversations = await db.select()
         .from(conversationParticipants)
-        .where(eq(conversationParticipants.participantId, id))
-        .innerJoin(
+        // .where(eq(conversationParticipants.participantId, id))
+        .leftJoin(
+            users, 
+            eq(conversationParticipants.userId, users.id)
+        )
+        .leftJoin(
             conversations, 
             eq(conversationParticipants.conversationId, conversations.id)
         )
-        .innerJoin(
-            users, 
-            eq(conversationParticipants.participantId, users.id)
-        )
 
+        // return returnedConversations
+        // console.log({returnedConversations: JSON.stringify(returnedConversations)})
+        // console.log({originalConversation1: returnedConversations[0], originalConversation2: returnedConversations[1]})
+        // console.log({originalConversation})
+        // console.log({originalParticipant1: returnedConversations[0].conversation_participants, originalParticipant2: returnedConversations[1]?.conversation_participants})
         // const result = returnedConversations.reduce<Record<number, { conversation: Conversation; conversationParticipants: ConversationParticipant[] }>>(
+        // const resultObj = returnedConversations.reduce<Record<string, { conversation: Conversation; conversationParticipants: ConversationParticipant[] }>>(
         const resultObj = returnedConversations.reduce<Record<string, { conversation: Conversation; conversationParticipants: ConversationParticipant[] }>>(
             (acc, row) => {
-              const conversation = row.conversations;
-              const conversationParticipant = row.conversation_participants;
-              const user = row.users;
-              const userWithoutPassword = {id: user.id, username: user.username, email: user.email, phone: user.phone, profilePicture: user.profilePicture, createdAt: user.createdAt}
-            
+                const conversation = row.conversations;
+                const conversationParticipant = row.conversation_participants;
+                const user = row.users;
+                
+                //   console.log({conversation})
+                if (conversation && !acc[`${conversation.id}`]) {
+                    acc[`${conversation.id}`] = { conversation, conversationParticipants: [] };
+                    // console.log({conversationParticipant, user})
+                }
+                if (conversation && conversationParticipant && user) {
+                    const userWithoutPassword = {id: user.id, username: user?.username, email: user.email, phone: user.phone, profilePicture: user.profilePicture, createdAt: user.createdAt}
+                    //   acc[`${conversation.id}`].conversationParticipants.push({...conversationParticipant, ...userWithoutPassword});
+                    // const newConversationParticipants = [...acc[`${conversation.id}`].conversationParticipants, {...conversationParticipant, ...userWithoutPassword}]
+                    // acc[`${conversation.id}`].conversationParticipants = newConversationParticipants;
+                    acc[`${conversation.id}`].conversationParticipants.push({...conversationParticipant, ...userWithoutPassword});
+                }
+                
+            //     if (conversationParticipant && user) {
+            //       const userWithoutPassword = {id: user.id, username: user?.username, email: user.email, phone: user.phone, profilePicture: user.profilePicture, createdAt: user.createdAt}
+            //     // const newConversationParticipants = [...acc[`${conversations.id}`].conversationParticipants, {...conversationParticipants, ...userWithoutPassword}]
+            //     // acc[`${conversations.id}`].conversationParticipants = newConversationParticipants
+            //         acc[`${conversation.id}`].conversationParticipants.push({...conversationParticipant, ...userWithoutPassword});
+            //     }
           
-              if (!acc[`${conversations.id}`]) {
-                acc[`${conversations.id}`] = { conversation, conversationParticipants: [] };
-              }
-          
-              if (conversationParticipant) {
-                acc[`${conversations.id}`].conversationParticipants.push({...conversationParticipant, ...userWithoutPassword});
-              }
-          
-              return acc;
+                return acc;
             },
             {}
         );
         const result = Object.values(resultObj);
-        console.log({result})
+        // console.log({result})
+        // console.log({participants: result[0]?.conversationParticipants})
+        // console.log({result})
         // const returnedConversations = await db.select()
         // .from(conversations)
         // .innerJoin(

@@ -64,6 +64,13 @@
       "when": 1725484531257,
       "tag": "0008_funny_siren",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1725747967827,
+      "tag": "0009_living_power_man",
+      "breakpoints": true
     }
   ]
 }

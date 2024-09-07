@@ -22,11 +22,11 @@ export const messageRoutes = new Elysia({prefix: '/messages'})
     if(!creatorExists) return {succeeded: false, msg: 'The user trying to create thhis conversation does not exist'}
 
     await db.transaction(async (tx) => {
-        const [conversation] = await tx.insert(conversations).values({createdBy}).returning();
+        const [conversation] = await tx.insert(conversations).values({createdBy, conversationType: participants.length > 1 ? 'group' : 'one-to-one'}).returning();
         if(!conversation) await tx.rollback();
-        await tx.insert(conversationParticipants).values({conversationId: conversation.id, participantId: conversation.createdBy});
+        await tx.insert(conversationParticipants).values({conversationId: conversation.id, userId: conversation.createdBy});
         for(let i = 0; i < participants.length; i++) {
-            await tx.insert(conversationParticipants).values({conversationId: conversation.id, participantId: participants[i]})
+            await tx.insert(conversationParticipants).values({conversationId: conversation.id, userId: participants[i]})
         }
     })
     return {succeeded: true};

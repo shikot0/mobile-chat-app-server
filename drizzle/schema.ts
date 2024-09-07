@@ -71,6 +71,6 @@ export const conversations = pgTable('conversations', {
 export const conversationParticipants = pgTable('conversation_participants', {
     id: uuid('id').defaultRandom().primaryKey(),
     conversationId: uuid('conversation_id').references(() => conversations.id).notNull(),
-    participantId: uuid('participant_id').references(() => users.id).notNull(),
+    userId: uuid('user_id').references(() => users.id).notNull(),
     joinDate: timestamp('join_date', {withTimezone: true}).defaultNow(),
 })
