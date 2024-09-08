@@ -71,6 +71,13 @@
       "when": 1725747967827,
       "tag": "0009_living_power_man",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1725751530207,
+      "tag": "0010_pink_spiral",
+      "breakpoints": true
     }
   ]
 }

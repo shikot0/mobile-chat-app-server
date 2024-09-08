@@ -25,6 +25,7 @@ export const messages = pgTable('messages', {
     // text: text('text').notNull(),
     // messageId: uuid('message_id').references(() => textMessages.id, mediaMessages.id),
     // messageId: uuid('message_id').references(() => [textMessages.id, mediaMessages.id]),
+    conversationId: uuid('conversation_id').references(() => conversations.id).notNull(),
     messageId: uuid('message_id').references(() => textMessages.id).notNull(),
     createdAt: timestamp('created_at', {withTimezone: true}).defaultNow().notNull(),
     updatedAt: timestamp('updated_at', {withTimezone: true}).defaultNow().notNull()

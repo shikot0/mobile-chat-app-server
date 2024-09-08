@@ -32,18 +32,6 @@ export async function getConversations(token: string | undefined, jwt:{
         // console.log({test})
         if(!token) return error('Non-Authoritative Information');
 
-
-        // const returnedConversations = await db.select()
-        // .from(conversations)
-        // .innerJoin(
-        //     conversationParticipants, 
-        //     eq(conversations.id, conversationParticipants.conversationId)
-        // )
-        // .innerJoin(
-        //     users, 
-        //     eq(conversationParticipants.participantId, users.id)
-        // )
-
         const jwtResult = await jwt.verify(token)
 
         if(!jwtResult) return error('Non-Authoritative Information');
