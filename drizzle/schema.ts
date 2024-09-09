@@ -19,17 +19,17 @@ export const users = pgTable('users', {
 //     // conversationId: uuid('conversation_id').references(() => conversations.id).notNull(),
 //     text: text('text').notNull(),
 // })
-export const messages = pgTable('messages', {
-    id: uuid('id').defaultRandom().primaryKey(),
-    type: text('type', {enum: ['text', 'media', 'audio']}),
-    // text: text('text').notNull(),
-    // messageId: uuid('message_id').references(() => textMessages.id, mediaMessages.id),
-    // messageId: uuid('message_id').references(() => [textMessages.id, mediaMessages.id]),
-    conversationId: uuid('conversation_id').references(() => conversations.id).notNull(),
-    messageId: uuid('message_id').references(() => textMessages.id).notNull(),
-    createdAt: timestamp('created_at', {withTimezone: true}).defaultNow().notNull(),
-    updatedAt: timestamp('updated_at', {withTimezone: true}).defaultNow().notNull()
-})
+// export const messages = pgTable('messages', {
+//     id: uuid('id').defaultRandom().primaryKey(),
+//     type: text('type', {enum: ['text', 'media', 'audio']}),
+//     // text: text('text').notNull(),
+//     // messageId: uuid('message_id').references(() => textMessages.id, mediaMessages.id),
+//     // messageId: uuid('message_id').references(() => [textMessages.id, mediaMessages.id]),
+//     conversationId: uuid('conversation_id').references(() => conversations.id).notNull(),
+//     messageId: uuid('message_id').references(() => textMessages.id).notNull(),
+//     createdAt: timestamp('created_at', {withTimezone: true}).defaultNow().notNull(),
+//     updatedAt: timestamp('updated_at', {withTimezone: true}).defaultNow().notNull()
+// })
 // }, (table) => {
 //     return {
 //         messagesReference: foreignKey({
@@ -48,6 +48,7 @@ export const messages = pgTable('messages', {
 export const textMessages = pgTable('text_messages', {
     id: uuid('id').defaultRandom().primaryKey(),
     text: text('text').notNull(),
+    conversationId: uuid('conversation_id').references(() => conversations.id).notNull(),
     createdAt: timestamp('created_at', {withTimezone: true}).defaultNow().notNull(),
     updatedAt: timestamp('updated_at', {withTimezone: true}).defaultNow().notNull()
 })
@@ -55,7 +56,8 @@ export const textMessages = pgTable('text_messages', {
 // export const imageMessages = pgTable('image_messages', {
 export const mediaMessages = pgTable('media_messages', {
     id: uuid('id').defaultRandom().primaryKey(),
-    medias: text('media').array(10).notNull(),
+    media: text('media').array(10).notNull(),
+    conversationId: uuid('conversation_id').references(() => conversations.id).notNull(),
     text: text('text'),
     createdAt: timestamp('created_at', {withTimezone: true}).defaultNow().notNull(),
     updatedAt: timestamp('updated_at', {withTimezone: true}).defaultNow().notNull()
