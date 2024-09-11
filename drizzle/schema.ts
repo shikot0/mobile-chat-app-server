@@ -45,20 +45,29 @@ export const users = pgTable('users', {
 //     }
 // })
 
-export const textMessages = pgTable('text_messages', {
-    id: uuid('id').defaultRandom().primaryKey(),
-    text: text('text').notNull(),
-    conversationId: uuid('conversation_id').references(() => conversations.id).notNull(),
-    createdAt: timestamp('created_at', {withTimezone: true}).defaultNow().notNull(),
-    updatedAt: timestamp('updated_at', {withTimezone: true}).defaultNow().notNull()
-})
+// export const textMessages = pgTable('text_messages', {
+//     id: uuid('id').defaultRandom().primaryKey(),
+//     text: text('text').notNull(),
+//     conversationId: uuid('conversation_id').references(() => conversations.id).notNull(),
+//     createdAt: timestamp('created_at', {withTimezone: true}).defaultNow().notNull(),
+//     updatedAt: timestamp('updated_at', {withTimezone: true}).defaultNow().notNull()
+// })
 
-// export const imageMessages = pgTable('image_messages', {
-export const mediaMessages = pgTable('media_messages', {
+// // export const imageMessages = pgTable('image_messages', {
+// export const mediaMessages = pgTable('media_messages', {
+//     id: uuid('id').defaultRandom().primaryKey(),
+//     media: text('media').array(10).notNull(),
+//     conversationId: uuid('conversation_id').references(() => conversations.id).notNull(),
+//     text: text('text'),
+//     createdAt: timestamp('created_at', {withTimezone: true}).defaultNow().notNull(),
+//     updatedAt: timestamp('updated_at', {withTimezone: true}).defaultNow().notNull()
+// })
+export const messages = pgTable('messages', {
     id: uuid('id').defaultRandom().primaryKey(),
-    media: text('media').array(10).notNull(),
-    conversationId: uuid('conversation_id').references(() => conversations.id).notNull(),
     text: text('text'),
+    conversationId: uuid('conversation_id').references(() => conversations.id).notNull(),
+    userId: uuid('user_id').references(() => users.id).notNull(),
+    media: text('media').array(10),
     createdAt: timestamp('created_at', {withTimezone: true}).defaultNow().notNull(),
     updatedAt: timestamp('updated_at', {withTimezone: true}).defaultNow().notNull()
 })

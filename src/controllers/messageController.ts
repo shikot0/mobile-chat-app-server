@@ -17,7 +17,7 @@ type Conversation = typeof conversations.$inferSelect;
 //     username: string,
 //     email: string,
 //     phone: string,
-//     profilePicture: string | null,
+//     profilePicture: string | null, 
 //     createdAt: string
 // }
 type ConversationParticipant = typeof conversationParticipants.$inferSelect & Omit<Users, 'password'>
