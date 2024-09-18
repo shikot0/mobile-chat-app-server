@@ -9,6 +9,8 @@ import { criticallyDampedSpringCalculations } from 'react-native-reanimated/lib/
 
 type Message = typeof messages.$inferSelect
 type User = typeof users.$inferSelect
+type Conversation = typeof conversations.$inferSelect;
+type ConversationParticipant = typeof conversationParticipants.$inferSelect & Omit<User, 'password'>
 
 const AUTHORIZATION_SECRET = process.env.AUTHORIZATION_SECRET || '';
 
@@ -30,7 +32,11 @@ const authMiddleWare = new Elysia().use(
     }
 
 
-    const userToken = context.request.headers.get('token');
+    // console.log({route: context.request.destination, body: context.request.body})
+    // const userToken = context.request.headers.get('token');
+    const userToken = context.request.headers.get('token') || context.query.userToken;
+    // console.log({userToken})
+    // console.log({params: context.params, query: context.query})
     if(!userToken) {
         return {
             user: null,
@@ -42,16 +48,15 @@ const authMiddleWare = new Elysia().use(
     if(!tokenResult) {
         return {
             user: null,
-            token: userToken
+            userToken
         }
     }
 
     const {id} = tokenResult;
     const [user] = await db.select().from(users).where(eq(users.id, id.toString()));
-
     return {
         user,
-        token: userToken
+        userToken
     }
 })
 
@@ -67,27 +72,32 @@ export const messageRoutes = new Elysia({prefix: '/messages'})
 )
 .use(authMiddleWare)
 .get('/conversations', ({headers: {token}, jwt}) => getConversations(token, jwt))
-.get('/conversations/:id/get-messages', async ({params: {id: conversationId}, headers: {token}, jwt}) => { 
+.get('/conversations/:id/get-messages', async ({params: {id: conversationId}, headers: {token}, jwt, user, userToken}) => { 
     try {
-        if(!token) return error('Non-Authoritative Information');
+        if(!userToken) return error('Non-Authoritative Information');
+        if(!user) return error('Non-Authoritative Information');
 
-        const jwtResult = await jwt.verify(token)
-        if(!jwtResult) return error('Non-Authoritative Information');
+        // const [userVerificationResult] = await db.select()
+        // .from(users)
+        // // .where(eq(users.id, id))
+        // .leftJoin(
+        //     conversationParticipants,
+        //     eq(users.id, conversationParticipants.userId)
+        // ).where(and(eq(users.id, user.id), eq(conversationParticipants.conversationId, conversationId))).limit(1);
+        // const {users: verifiedUser, conversation_participants: verifiedParticipant} = userVerificationResult;
 
-        let {id} = jwtResult;
-        id = id.toString();
-        const [userVerificationResult] = await db.select()
-        .from(users)
         // .where(eq(users.id, id))
-        .leftJoin(
-            conversationParticipants,
-            eq(users.id, conversationParticipants.userId)
-        ).where(and(eq(users.id, id), eq(conversationParticipants.conversationId, conversationId))).limit(1);
 
-        const {users: verifiedUser, conversation_participants: verifiedParticipant} = userVerificationResult;
-        if(!verifiedUser || !verifiedParticipant) {
+        // if(!verifiedUser || !verifiedParticipant) {
+        //     return error('Expectation Failed')
+        // }
+        const [userVerificationResult] = await db.select()
+        .from(conversationParticipants)
+        .where(and(eq(conversationParticipants.userId, user.id), eq(conversationParticipants.conversationId, conversationId))).limit(1);
+        
+        if(!userVerificationResult) {
             return error('Expectation Failed')
-        }
+        } 
 
         // const returnedMessages = await db.select()
         // .from(messages)
@@ -112,7 +122,7 @@ export const messageRoutes = new Elysia({prefix: '/messages'})
             return acc
         }, [])
 
-        console.log({result})
+        // console.log({result})
         // console.log({returnedMessages})
         return {succeeded: true, result}
     }catch(error) {
@@ -133,50 +143,128 @@ export const messageRoutes = new Elysia({prefix: '/messages'})
     }),
 
     open(ws) {
-        const {user} = ws.data;
+        const {user, userToken} = ws.data;
+        // console.log({user, userToken})
         if(!user) ws.close();
+        // ws.data.params.id
 
-        ws.subscribe(`conversations/${ws.id}`)
+        // ws.subscribe(`conversations/${ws.}`)
+        // ws.subscribe(`${ws.data.params.id}`)
+        ws.subscribe(`message`)
     }, 
-
     async message(ws, body) {
         const {user} = ws.data;
+        console.log({messageUser: user})
         if(!user) return;
         try {
             const {text, media} = body;
+            console.log({text, media})
             if(!text && !media) return {succeeded: false, msg: 'Insufficient data provided'};
-
-            const [res] = await db.insert(messages).values({conversationId: ws.id, userId: user.id, text}).returning();
-            if(!res) return {succeeded: false, msg: "Couldn't add message"}
+            // console.log({id: ws.data.params.id})
+            // await db.delete(messages).where(eq(messages.conversationId, "76f06528-576b-4b4e-850f-c2578b67fae5"));
+            const [message] = await db.insert(messages).values({conversationId: ws.data.params.id, userId: user.id, text}).returning();
+            if(!message) return {succeeded: false, msg: "Couldn't add message"}
             // return {succeeded: true, res}
-            ws.publish(`conversations/${ws.id}`, JSON.stringify(body))
+            // ws.publish('message', JSON.stringify(body))
+            // const returnedMessages = await db.select()
+            // .from(messages)
+            // .innerJoin(users, eq(messages.userId, users.id))
+            // .where(eq(messages.conversationId, conversationId))
+            const [messageUser] = await db.select()
+            .from(users)
+            .where(eq(users.id, message.userId))
+            // ws.publish('message', JSON.stringify(res))
+            ws.publish('message', JSON.stringify({message, user: messageUser}))
         }catch(error) {
             console.log(`Error using websockets: ${error}`)
         }
-        ws.publish("message", JSON.stringify(body))
+        // ws.publish("message", JSON.stringify(body))
     }
 })
-.post('/conversations/:id/post-message', async ({body, params: {id: conversationId}, headers: {token}, jwt}) => {
-    try {
-        if(!token) return error('Non-Authoritative Information');
+.get('/conversations/:id', async ({params: {id}, headers: {token}, user, userToken}) => {
+    if(!userToken) return error('Non-Authoritative Information');
+    if(!user) return error('Non-Authoritative Information');
 
-        const jwtResult = await jwt.verify(token)
-        if(!jwtResult) return error('Non-Authoritative Information');
+    // const [conversation] = await db.select()
+    // .from(conversations)
+    // .where(eq(conversations.id, id))
+    const [userVerificationResult] = await db.select()
+        .from(conversationParticipants)
+        .where(and(eq(conversationParticipants.userId, user.id), eq(conversationParticipants.conversationId, id))).limit(1);
+        
+    if(!userVerificationResult) {
+        return error('Unauthorized')
+    } 
 
-        let {id} = jwtResult;
-        id = id.toString();
-        const [result] = await db.select()
-        .from(users)
-        // .where(eq(users.id, id))
+    const returnedConversation = await db.select()
+        .from(conversations)
+        // .where(eq(conversationParticipants.participantId, id))
         .leftJoin(
-            conversationParticipants,
-            eq(users.id, conversationParticipants.userId)
-        ).where(and(eq(users.id, id), eq(conversationParticipants.conversationId, conversationId))).limit(1);
+            conversationParticipants, 
+            eq(conversations.id, conversationParticipants.conversationId)
+        )
+        .leftJoin(
+            users, 
+            eq(conversationParticipants.userId, users.id)
+        )
+        .where(eq(conversations.id, id))
 
-        const {users: verifiedUser, conversation_participants: verifiedParticipant} = result;
-        if(!verifiedUser || !verifiedParticipant) {
-            return error('Expectation Failed')
-        }
+    const resultObj = returnedConversation.reduce<Record<string, { conversation: Conversation; conversationParticipants: ConversationParticipant[] }>>(
+        (acc, row) => {
+            const conversation = row.conversations;
+            const conversationParticipant = row.conversation_participants;
+            const user = row.users;
+            
+            //   console.log({conversation})
+            if (conversation && !acc[`${conversation.id}`]) {
+                acc[`${conversation.id}`] = { conversation, conversationParticipants: [] };
+                // console.log({conversationParticipant, user})
+            }
+            if (conversation && conversationParticipant && user) {
+                const userWithoutPassword = {id: user.id, username: user?.username, email: user.email, phone: user.phone, profilePicture: user.profilePicture, createdAt: user.createdAt}
+                //   acc[`${conversation.id}`].conversationParticipants.push({...conversationParticipant, ...userWithoutPassword});
+                // const newConversationParticipants = [...acc[`${conversation.id}`].conversationParticipants, {...conversationParticipant, ...userWithoutPassword}]
+                // acc[`${conversation.id}`].conversationParticipants = newConversationParticipants;
+                acc[`${conversation.id}`].conversationParticipants.push({...conversationParticipant, ...userWithoutPassword});
+            }
+            
+        //     if (conversationParticipant && user) {
+        //       const userWithoutPassword = {id: user.id, username: user?.username, email: user.email, phone: user.phone, profilePicture: user.profilePicture, createdAt: user.createdAt}
+        //     // const newConversationParticipants = [...acc[`${conversations.id}`].conversationParticipants, {...conversationParticipants, ...userWithoutPassword}]
+        //     // acc[`${conversations.id}`].conversationParticipants = newConversationParticipants
+        //         acc[`${conversation.id}`].conversationParticipants.push({...conversationParticipant, ...userWithoutPassword});
+        //     }
+      
+            return acc;
+        },
+        {}
+    );
+    const [result] = Object.values(resultObj);
+    if(!result) return error('No Content')
+    // console.log({result})
+    return {result, succeeded: true};
+}) 
+.post('/conversations/:id/post-message', async ({body, params: {id: conversationId}, headers: {token}, jwt, user, userToken}) => {
+    try {
+        if(!userToken) return error('Non-Authoritative Information');
+        if(!user) return error('Non-Authoritative Information');
+        // const jwtResult = await jwt.verify(token)
+        // if(!jwtResult) return error('Non-Authoritative Information');
+
+        // let {id} = jwtResult;
+        // id = id.toString();
+        // const [result] = await db.select()
+        // .from(users)
+        // // .where(eq(users.id, id))
+        // .leftJoin(
+        //     conversationParticipants,
+        //     eq(users.id, conversationParticipants.userId)
+        // ).where(and(eq(users.id, id), eq(conversationParticipants.conversationId, conversationId))).limit(1);
+
+        // const {users: verifiedUser, conversation_participants: verifiedParticipant} = result;
+        // if(!verifiedUser || !verifiedParticipant) {
+        //     return error('Expectation Failed')
+        // }
 
         // const {conversationId, type, text, media} = body;
         // const {type, text, media} = body;
@@ -192,10 +280,19 @@ export const messageRoutes = new Elysia({prefix: '/messages'})
         //     }else return {succeeded: false, media: "Media was not provided"};
         // }
         // const {type, text, media} = body;
+        const [userVerificationResult] = await db.select()
+        .from(conversationParticipants)
+        .where(and(eq(conversationParticipants.userId, user.id), eq(conversationParticipants.conversationId, conversationId))).limit(1);
+        
+        if(!userVerificationResult) {
+            return error('Expectation Failed')
+        } 
+
         const {text, media} = body;
         if(!text && !media) return {succeeded: false, msg: 'Insufficient data provided'};
 
-        const [res] = await db.insert(messages).values({conversationId, userId: verifiedUser.id, text}).returning();
+        // const [res] = await db.insert(messages).values({conversationId, userId: verifiedUser.id, text}).returning();
+        const [res] = await db.insert(messages).values({conversationId, userId: user.id, text}).returning();
         if(!res) return {succeeded: false, msg: "Couldn't add message"}
         return {succeeded: true, res}
         

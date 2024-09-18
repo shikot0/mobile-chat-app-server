@@ -5,6 +5,7 @@ import { db } from "../../drizzle/db";
 import { users } from "../../drizzle/schema";
 import { and, eq } from "drizzle-orm";
 import {password as hashingFunction} from 'bun';
+import sharp from "sharp";
 
 // export type NewUser = {
 //     username: string,
@@ -26,7 +27,7 @@ export const CreateNewUserSchema = t.Object({
     email: t.String(),
     password: t.String(),
     phoneNumber: t.String(),
-    // profilePicture: t.File()
+    // profilePicture: t.Optional(t.File())
 })
 const LoginUserSchema = t.Object({
     email: t.String(),
@@ -50,11 +51,19 @@ const authRoutes = new Elysia({prefix: '/auth'})
     try {
         // console.log({body})
 
+        // let {username, email, password, phoneNumber, profilePicture} = body;
         let {username, email, password, phoneNumber} = body;
         username = username.trim();
         email = email.trim();
         password = password.trim();
         phoneNumber = phoneNumber.trim();
+        // let blurHash;
+        // if(profilePicture) {
+        //     const arrayBuffer = await profilePicture.arrayBuffer();
+        //     blurHash = await sharp(arrayBuffer, {animated: true}).resize(150, 150).png().toArray();
+        //     console.log({blurHash});
+        //     return {blurHash}
+        // }
 
         // const returnedUser = await db.insert(users).values({username, email, password, phone: phoneNumber})
         const userExists = (await db.select().from(users).where(eq(users.username, username)).limit(1)).at(0);

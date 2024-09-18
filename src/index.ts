@@ -23,7 +23,7 @@ const app = new Elysia({
 .use(authRoutes)
 .use(userRoutes)
 .use(messageRoutes)
-.get("/", () => "Hello Elysia")
+// .get("/", () => "Hello Elysia")
 .listen(3000);
 
 console.log(
