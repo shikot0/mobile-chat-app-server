@@ -154,7 +154,7 @@ export const messageRoutes = new Elysia({prefix: '/messages'})
     }, 
     async message(ws, body) {
         const {user} = ws.data;
-        console.log({messageUser: user})
+        // console.log({messageUser: user})
         if(!user) return;
         try {
             const {text, media} = body;
