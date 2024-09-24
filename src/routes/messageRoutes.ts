@@ -3,7 +3,7 @@ import { createConversation, getConversations } from '../controllers/messageCont
 import { db } from '../../drizzle/db';
 // import { conversationParticipants, conversations, textMessages, users } from '../../drizzle/schema';
 import { conversationParticipants, conversations, messages, users } from '../../drizzle/schema';
-import { eq, and, asc, desc } from 'drizzle-orm';
+import { eq, and, asc, desc, exists, } from 'drizzle-orm';
 import {jwt} from '@elysiajs/jwt';
 import { criticallyDampedSpringCalculations } from 'react-native-reanimated/lib/typescript/reanimated2/animation/springUtils';
 
@@ -71,7 +71,121 @@ export const messageRoutes = new Elysia({prefix: '/messages'})
     })
 )
 .use(authMiddleWare)
-.get('/conversations', ({headers: {token}, jwt}) => getConversations(token, jwt))
+// .get('/conversations', ({headers: {token}, jwt}) => getConversations(token, jwt))
+.get('/conversations', async ({headers: {token}, jwt, user, userToken}) => {
+    try {
+        if(!userToken) return error('Non-Authoritative Information');
+        if(!user) return error('Non-Authoritative Information');
+
+        console.log({user})
+        // const [userVerificationResult] = await db.select()
+        // .from(users)
+        // // .where(eq(users.id, id))
+        // .leftJoin(
+        //     conversationParticipants,
+        //     eq(users.id, conversationParticipants.userId)
+        // ).where(and(eq(users.id, user.id), eq(conversationParticipants.conversationId, conversationId))).limit(1);
+        // const {users: verifiedUser, conversation_participants: verifiedParticipant} = userVerificationResult;
+
+        // .where(eq(users.id, id))
+
+        // if(!verifiedUser || !verifiedParticipant) {
+        //     return error('Expectation Failed')
+        // }
+        // const [userVerificationResult] = await db.select()
+        // .from(conversationParticipants)
+        // .where(and(eq(conversationParticipants.userId, user.id), eq(conversationParticipants.conversationId, conversationId))).limit(1);
+        
+        // if(!userVerificationResult) {
+        //     return error('Expectation Failed')
+        // } 
+
+
+        // const returnedConversations = await db.select()
+        // .from(conversationParticipants)
+        // .leftJoin(
+        //     conversations, 
+        //     eq(conversationParticipants.conversationId, conversations.id)
+        // )
+        // .leftJoin(
+        //     users, 
+        //     eq(conversationParticipants.userId, users.id)
+        // )
+
+        // const returnedConversations = await db.select()
+        // .from(conversationParticipants)
+        // .leftJoin(
+        //     conversations, 
+        //     eq(conversationParticipants.conversationId, conversations.id)
+        // )
+        // .leftJoin(
+        //     users, 
+        //     eq(conversationParticipants.userId, users.id)
+        // )
+        // .where(exists(db.select().from(conversationParticipants).where(eq(conversationParticipants.id, user.id))));
+        // const returnedConversations = await db.select()
+        // .from(conversationParticipants)
+        // .leftJoin(
+        //     users, 
+        //     eq(conversationParticipants.userId, users.id)
+        // )
+        // .leftJoin(
+        //     conversations, 
+        //     eq(conversationParticipants.conversationId, conversations.id)
+        // )
+        // .where(exists(db.select().from(conversationParticipants).where(eq(conversationParticipants.id, user.id)).leftJoin(conversations, eq(conversationParticipants.conversationId, conversationParticipants.id))));
+        // .where(exists(db.select().from(conversations).where(eq(conversationParticipants.id, user.id))));
+        // .where(exists(db.select().from(conversations).leftJoin(conversationParticipants, eq(conversations.id, conversationParticipants.conversationId)).leftJoin(users, eq(conversationParticipants.userId, users.id))));
+        // .where(eq(conversationParticipants.userId, user.id));
+        // console.log({users: returnedConversations[0]})
+        // const returnedConversations = await db.select()
+        // .from(conversationParticipants)
+        // // .where(eq(conversationParticipants.userId, user.id))
+        // .where(eq(conversationParticipants.userId, user.id))
+        // .leftJoin(
+        //     conversations, 
+        //     eq(conversationParticipants.conversationId, conversations.id)
+        // )
+        // .leftJoin(
+        //     users, 
+        //     eq(conversationParticipants.userId, users.id)
+        // )
+        
+        const returnedConversations = await db.select()
+        .from(conversations)
+        // .where(exists(db.select().from(conversationParticipants).where(eq(conversations.id, conversationParticipants.conversationId)).leftJoin(users, eq(conversationParticipants.userId, user.id))))
+        .where(exists(db.select().from(conversationParticipants).where(and(eq(conversationParticipants.userId, user.id), eq(conversations.id, conversationParticipants.conversationId))).leftJoin(users, eq(conversationParticipants.userId, user.id))))
+        .leftJoin(conversationParticipants, eq(conversations.id, conversationParticipants.conversationId))
+        .leftJoin(users, eq(conversationParticipants.userId, users.id));
+        // console.log({value: JSON.stringify(returnedConversations)})
+
+        // console.log({conversations: returnedConversations})
+        // return;
+        const resultObj = returnedConversations.reduce<Record<string, { conversation: Conversation; conversationParticipants: ConversationParticipant[] }>>(
+            (acc, row) => {
+                const conversation = row.conversations;
+                const conversationParticipant = row.conversation_participants;
+                const user = row.users;
+                
+                if (conversation && !acc[`${conversation.id}`]) {
+                    acc[`${conversation.id}`] = { conversation, conversationParticipants: [] };
+                }
+                if (conversation && conversationParticipant && user) {
+                    const userWithoutPassword = {id: user.id, username: user?.username, email: user.email, phone: user.phone, profilePicture: user.profilePicture, createdAt: user.createdAt}
+                    acc[`${conversation.id}`].conversationParticipants.push({...conversationParticipant, ...userWithoutPassword});
+                }
+                
+                return acc;
+            },
+            {}
+        );
+        const result = Object.values(resultObj);
+
+        return {result, succeeded: true};
+    } catch(error) {
+        console.log(`Server error: ${error}`)
+    }
+})
 .get('/conversations/:id/get-messages', async ({params: {id: conversationId}, headers: {token}, jwt, user, userToken}) => { 
     try {
         if(!userToken) return error('Non-Authoritative Information');
