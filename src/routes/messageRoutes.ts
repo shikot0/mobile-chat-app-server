@@ -77,7 +77,7 @@ export const messageRoutes = new Elysia({prefix: '/messages'})
         if(!userToken) return error('Non-Authoritative Information');
         if(!user) return error('Non-Authoritative Information');
 
-        console.log({user})
+        // console.log({user})
         // const [userVerificationResult] = await db.select()
         // .from(users)
         // // .where(eq(users.id, id))
@@ -222,23 +222,39 @@ export const messageRoutes = new Elysia({prefix: '/messages'})
         // .from(textMessages)
         // .where(eq(textMessages.conversationId, conversationId))
         // return {succeeded: true, returnedMessages}
-        const returnedMessages = await db.select()
+
+        // const returnedMessages = await db.select()
+        // .from(messages)
+        // .innerJoin(users, eq(messages.userId, users.id))
+        // .where(eq(messages.conversationId, conversationId))
+        // .orderBy(asc(messages.createdAt)); 
+
+        const sanitizedUser = {
+            id: users.id,
+            username: users.username,
+            phone: users.phone,
+            email: users.email,
+            profilePicture: users.profilePicture,
+            createdAt: users.createdAt,
+        }
+        
+        const returnedMessages = await db.select({message: {...messages}, user: {...sanitizedUser}})
         .from(messages)
         .innerJoin(users, eq(messages.userId, users.id))
         .where(eq(messages.conversationId, conversationId))
-        // .orderBy(desc(messages.createdAt));
         .orderBy(asc(messages.createdAt)); 
 
-        const result = returnedMessages.reduce<{ message: Message, user: User }[]>((acc, item) => {
-        // const result = returnedMessages.reduce((acc, item) => {
-            const {messages, users} = item;
-            acc.push({message: messages, user: users})
-            return acc
-        }, [])
+        // const result = returnedMessages.reduce<{ message: Message, user: User }[]>((acc, item) => {
+        // // const result = returnedMessages.reduce((acc, item) => {
+        //     const {messages, users} = item;
+        //     acc.push({message: messages, user: users})
+        //     return acc
+        // }, [])
 
         // console.log({result})
         // console.log({returnedMessages})
-        return {succeeded: true, result}
+        // return {succeeded: true, result}
+        return {succeeded: true, result: returnedMessages}
     }catch(error) {
         console.log(`Error getting messages: ${error}`)
     }
@@ -256,11 +272,22 @@ export const messageRoutes = new Elysia({prefix: '/messages'})
         media: t.Optional(t.Array(t.File()))
     }),
 
-    open(ws) {
+    async open(ws) {
         const {user, userToken} = ws.data;
         // console.log({user, userToken})
-        if(!user) ws.close();
+        if(!user) {
+            ws.close();
+            return;
+        }
+
+        // ws.terminate
+        const [isParticipant] = await db.select().from(conversationParticipants).where(and(eq(conversationParticipants.userId, user.id), exists(db.select().from(conversations).where(and(eq(conversations.id, ws.data.params.id), eq(conversationParticipants.conversationId, ws.data.params.id))))))
         // ws.data.params.id
+        // console.log({user, isParticipant})
+        if(!isParticipant) {
+            ws.close();
+            return;
+        }
 
         // ws.subscribe(`conversations/${ws.}`)
         // ws.subscribe(`${ws.data.params.id}`)
